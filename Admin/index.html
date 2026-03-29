@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic OS | Admin Console</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --google-blue: #1a73e8;
+            --google-blue-hover: #f1f3f4;
+            --google-blue-active: #e8f0fe;
+            --text-main: #202124;
+            --text-secondary: #5f6368;
+            --bg-main: #ffffff;
+            --bg-sidebar: #ffffff;
+            --border: #dadce0;
+            --success: #1e8e3e;
+            --warning: #d93025;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* Google-Style Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            padding: 24px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .logo-area {
+            padding: 0 12px 32px;
+            font-size: 22px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--google-blue);
+            border-radius: 8px;
+        }
+
+        .nav-item {
+            padding: 12px 24px;
+            border-radius: 0 50px 50px 0;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-right: 12px;
+        }
+
+        .nav-item:hover {
+            background: var(--google-blue-hover);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: var(--google-blue-active);
+            color: var(--google-blue);
+            font-weight: 700;
+        }
+
+        /* Main Content */
+        .main-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 48px 64px;
+        }
+
+        .view {
+            display: none;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .view.active {
+            display: block;
+            animation: googleFade 0.3s ease;
+        }
+
+        @keyframes googleFade {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 32px;
+            color: var(--text-main);
+        }
+
+        /* Modern Dashboard Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .badge-lead {
+            border: 1px solid #fbbc04;
+            color: #b06000;
+            background: #fef7e0;
+        }
+
+        .badge-dropped {
+            border: 1px solid #f28b82;
+            color: #d93025;
+            background: #fce8e6;
+        }
+
+        .badge-converted {
+            border: 1px solid #81c995;
+            color: #188038;
+            background: #e6f4ea;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 400;
+            color: var(--text-main);
+        }
+
+        /* Google Table UI */
+        .table-wrapper {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            background: #f8f9fa;
+        }
+
+        td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: #fcfcfc;
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-pending {
+            border: 1px solid #f28b82;
+            color: #d93025;
+            background: #fce8e6;
+        }
+
+        .badge-confirmed {
+            border: 1px solid #81c995;
+            color: #188038;
+            background: #e6f4ea;
+        }
+
+        /* Action Buttons */
+        .btn-google {
+            background: var(--google-blue);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+        }
+
+        .btn-google:hover {
+            background: #185abc;
+            box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+        }
+
+        /* Forms / Settings */
+        .settings-container {
+            max-width: 600px;
+        }
+
+        .form-field {
+            margin-bottom: 24px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .input-google {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input-google:focus {
+            border: 2px solid var(--google-blue);
+            padding: 11px 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="sidebar">
+        <div class="logo-area">
+            <div class="logo-icon"></div>
+            <span>Clinic OS</span>
+        </div>
+        <div class="nav-item active" onclick="switchView('view-appointments', this)">
+            <span style="font-size:18px">📅</span> Appointments
+        </div>
+        <div class="nav-item" onclick="switchView('view-patients', this)">
+            <span style="font-size:18px">👥</span> Patients
+        </div>
+        <div class="nav-item" onclick="switchView('view-leads', this)">
+            <span style="font-size:18px">📞</span> Leads
+        </div>
+        <div class="nav-item" onclick="switchView('view-reports', this)">
+            <span style="font-size:18px">📈</span> Reports
+        </div>
+        <div class="nav-item" onclick="switchView('view-settings', this)">
+            <span style="font-size:18px">⚙️</span> Settings
+        </div>
+        <div class="nav-item" onclick="switchView('view-availability', this)">
+            <span style="font-size:18px">🕒</span> Availability
+        </div>
+    </nav>
+
+    <div class="main-panel">
+
+        <div id="view-appointments" class="view active">
+            <h1>Daily Schedule</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Appointments Today</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Action Required</div>
+                    <div class="stat-value" id="statPending" style="color: var(--warning)">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Confirmed</div>
+                    <div class="stat-value" id="statConfirmed" style="color: var(--success)">0</div>
+                </div>
+            </div>
+            <div id="pagination" style="display:flex; justify-content:center; margin:20px; gap:10px;"></div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Contact</th>
+                            <th>Schedule</th>
+                            <th>Status</th>
+                            <th style="text-align:right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsBody"></tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div id="toast"
+            style="position:fixed; top:20px; right:20px; background:#323232; color:white; padding:12px 24px; border-radius:8px; display:none; z-index:9999; font-size:14px; box-shadow:0 4px 12px rgba(0,0,0,0.2); animation: slideIn 0.3s ease;">
+            ✓ Action Completed
+        </div>
+        <div id="view-leads" class="view">
+            <h1>Lead Management</h1>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Leads</div>
+                    <div class="stat-value" id="leadTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Hot Leads</div>
+                    <div class="stat-value" id="leadHot" style="color: var(--warning)">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Converted</div>
+                    <div class="stat-value" id="leadConverted" style="color: var(--success)">0</div>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Dropped At</th>
+                            <th style="text-align:right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leadsBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="view-patients" class="view">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+                <h1>Patient Database</h1>
+                <div style="position:relative; width:300px;">
+                    <span style="position:absolute; left:12px; top:10px; color:var(--text-secondary)">🔍</span>
+                    <input type="text" id="patientSearch" placeholder="Search by name or phone..."
+                        style="width:100%; padding:10px 10px 10px 40px; border-radius:24px; border:1px solid var(--border); outline:none; font-family:inherit;"
+                        onkeyup="searchPatients()">
+                </div>
+            </div>
+            <div id="patientPagination"  style="display:flex; justify-content:center; margin:20px; gap:10px;"></div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Full Name</th>
+                            <th>Phone Number</th>
+                            <th>Total Visits</th>
+                            <th>Last Seen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patientsBody"></tbody>
+                </table>
+                <div id="emptyState"
+                    style="display:none; text-align:center; padding:60px; color:var(--text-secondary);">
+                    <div style="font-size:48px; margin-bottom:16px;">📂</div>
+                    <p>No patients found matching your search.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-reports" class="view">
+            <h1>Performance Insights</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Monthly Growth</div>
+                    <div class="stat-value" style="color: var(--success)">+12.5%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Patient Satisfaction</div>
+                    <div class="stat-value">4.9/5</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Estimated Revenue</div>
+                    <div class="stat-value">$8,450</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="view">
+            <h1>System Configuration</h1>
+            <div class="settings-container">
+                <div class="form-field">
+                    <label>Clinic Name</label>
+                    <input type="text" class="input-google" value="Elite Medical Center">
+                </div>
+                <div class="form-field">
+                    <label>Support Email</label>
+                    <input type="email" class="input-google" value="support@clinicpro.com">
+                </div>
+                <button class="btn-google">Save Changes</button>
+            </div>
+        </div>
+        <div id="view-availability" class="view">
+            <h1>Weekly Availability</h1>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th style="text-align:right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="availabilityBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://localhost:5026/api";
+        const CLINIC_ID = "8DFE6DD1-D5C6-49E2-B931-A4F414C62809";
+
+        let bookingsData = [];
+
+        let currentPage = 1;
+        const itemsPerPage = 6;
+        let currentPage1 = 1;
+        const itemsPerPage1 = 10;
+        let patientsData = [];
+        let filteredPatients = null;
+
+        function switchView(viewId, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            el.classList.add('active');
+            syncData();
+            if (viewId === 'view-availability') fetchAvailability();
+        }
+
+        function renderBookings(page = 1) {
+            const tbody = document.getElementById("bookingsBody");
+            tbody.innerHTML = "";
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = bookingsData.slice(start, end);
+            pageData.forEach(b => {
+                const confirmed = b.status === 'Confirmed' || b.status === 1;
+                const row = `
+            <tr>
+                <td><b style="color: var(--google-blue)">${b.patientName}</b></td>
+                <td style="color: var(--text-secondary)">${b.phone}</td>
+                <td>
+                    <div style="font-weight:500">${new Date(b.appointmentDate).toLocaleDateString()}</div>
+                    <div style="font-size:12px; color:var(--text-secondary)">${new Date(b.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </td>
+                <td><span class="badge ${confirmed ? 'badge-confirmed' : 'badge-pending'}">${confirmed ? 'Confirmed' : 'Pending'}</span></td>
+                <td style="text-align:right">
+                    ${!confirmed ? `<button class="btn-google" onclick="confirmBooking('${b.id}')">Approve</button>` : '—'}
+                </td>
+            </tr>
+        `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(bookingsData.length / itemsPerPage);
+            const paginationDiv = document.getElementById("pagination");
+            paginationDiv.innerHTML = "";
+            if (totalPages <= 1) return;
+
+            // Previous button
+            if (currentPage > 1) {
+                const prevBtn = document.createElement("button");
+                prevBtn.innerText = "Previous";
+                prevBtn.className = "btn-google";
+                prevBtn.onclick = () => {
+                    currentPage--;
+                    renderBookings(currentPage);
+                };
+                paginationDiv.appendChild(prevBtn);
+            }
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement("button");
+                pageBtn.innerText = i;
+                pageBtn.className = "btn-google";
+                if (i === currentPage) {
+                    pageBtn.style.background = "#185abc";
+                }
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    renderBookings(currentPage);
+                };
+                paginationDiv.appendChild(pageBtn);
+            }
+
+            // Next button
+            if (currentPage < totalPages) {
+                const nextBtn = document.createElement("button");
+                nextBtn.innerText = "Next";
+                nextBtn.className = "btn-google";
+                nextBtn.onclick = () => {
+                    currentPage++;
+                    renderBookings(currentPage);
+                };
+                paginationDiv.appendChild(nextBtn);
+            }
+        }
+
+        function renderPatients() {
+            const tbody = document.getElementById("patientsBody");
+            const dataToUse = filteredPatients || patientsData;
+            tbody.innerHTML = "";
+
+            // Calculate slicing for pagination
+            const start1 = (currentPage1 - 1) * itemsPerPage1;
+            const end1 = start1 + itemsPerPage1;
+            const pageData1 = dataToUse.slice(start1, end1);
+
+            pageData1.forEach(p => {
+                tbody.innerHTML += `
+            <tr>
+                <td><b>${p.patientName}</b></td>
+                <td>${p.phone}</td>
+                <td class="badge badge-confirmed">${bookingsData.filter(x => x.phone === p.phone).length} visits</td>
+                <td>${new Date(p.appointmentDate).toLocaleDateString()}</td>
+            </tr>
+        `;
+            });
+
+            // Pass the unique count to the pagination renderer
+            renderPatientPagination(dataToUse.length);
+            document.getElementById('emptyState').style.display = pageData1.length === 0 ? "block" : "none";
+        }
+
+        function renderPatientPagination(totalItems) {
+            const totalPages1 = Math.ceil(totalItems / itemsPerPage1);
+            const paginationDiv1 = document.getElementById("patientPagination");
+            paginationDiv1.innerHTML = "";
+
+            if (totalPages1 <= 1) return;
+
+            // Previous button
+            if (currentPage1 > 1) {
+                const prevBtn1 = document.createElement("button");
+                prevBtn1.innerText = "Previous";
+                prevBtn1.className = "btn-google";
+                prevBtn1.onclick = () => {
+                    currentPage1--;
+                    renderPatients();
+                };
+                paginationDiv1.appendChild(prevBtn1);
+            }
+
+            // Page numbers
+            for (let i = 1; i <= totalPages1; i++) {
+                const pageBtn1 = document.createElement("button");
+                pageBtn1.innerText = i;
+                pageBtn1.className = "btn-google";
+                if (i === currentPage1) {
+                    pageBtn1.style.background = "#185abc";
+                }
+                pageBtn1.onclick = () => {
+                    currentPage1 = i;
+                    renderPatients();
+                };
+                paginationDiv1.appendChild(pageBtn1);
+            }
+
+            // Next button
+            if (currentPage1 < totalPages1) {
+                const nextBtn1 = document.createElement("button");
+                nextBtn1.innerText = "Next";
+                nextBtn1.className = "btn-google";
+                nextBtn1.onclick = () => {
+                    currentPage1++;
+                    renderPatients();
+                };
+                paginationDiv1.appendChild(nextBtn1);
+            }
+        }
+
+        function searchPatients() {
+            const input = document.getElementById('patientSearch').value.toLowerCase();
+            if (input) {
+                filteredPatients = patientsData.filter(p => p.patientName.toLowerCase().includes(input) || p.phone.includes(input));
+            } else {
+                filteredPatients = null;
+            }
+            currentPage1 = 1;
+            renderPatients();
+        }
+
+        // 2. Toast Notification Logic
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = "✓ " + msg;
+            t.style.display = "block";
+            setTimeout(() => { t.style.display = "none"; }, 3000);
+        }
+
+        // 3. Updated Confirm Action
+        async function confirmBooking(id) {
+            try {
+                const res = await fetch(`${API}/admin/block/confirm/${id}`, { method: "PATCH" });
+                if (res.ok) {
+                    showToast("Booking approved and synced.");
+                    syncData();
+                }
+            } catch (e) {
+                showToast("Error updating record.");
+            }
+        }
+
+        async function fetchAvailability() {
+            const res = await fetch(`${API}/public/availability/${CLINIC_ID}`);
+            const availability = await res.json();
+            console.log("avail : " + availability);
+            renderAvailability(availability);
+        }
+
+        function renderAvailability(data) {
+            const tbody = document.getElementById("availabilityBody");
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            tbody.innerHTML = "";
+
+            // We map 1-7 to ensure all days are visible
+            for (let i = 1; i <= 7; i++) {
+                const record = data.find(d => d.dayOfWeek === i) || { startTime: "09:00", endTime: "17:00" };
+                const row = `
+            <tr>
+                <td><b>${days[i - 1]}</b></td>
+                <td><input type="time" class="input-google" id="start-${i}" value="${record.startTime.substring(0, 5)}"></td>
+                <td><input type="time" class="input-google" id="end-${i}" value="${record.endTime.substring(0, 5)}"></td>
+                <td style="text-align:right">
+                    <button class="btn-google" onclick="saveDay(${i})">Update</button>
+                </td>
+            </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            }
+        }
+
+        async function saveDay(dayNumber) {
+            console.log("dayNumber : " + dayNumber);
+            const dto = {
+                clinicId: CLINIC_ID,
+                dayOfWeek: dayNumber,
+                startTime: document.getElementById(`start-${dayNumber}`).value,
+                endTime: document.getElementById(`end-${dayNumber}`).value
+            };
+
+            console.log("dto : " + dto);
+
+            const res = await fetch(`${API}/public/availability`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(dto)
+            });
+
+            if (res.ok) showToast(`${days[dayNumber - 1]} updated.`);
+        }
+
+
+        async function syncData() {
+            try {
+                const [bookingRes, leadRes] = await Promise.all([
+                    fetch(`${API}/booking/${CLINIC_ID}`),
+                    fetch(`${API}/public/lead/${CLINIC_ID}`)
+                ]);
+
+                const bookings = await bookingRes.json();
+                const leads = await leadRes.json();
+
+                bookingsData = bookings;
+                patientsData = [...new Map(bookings.map(item => [item.phone, item])).values()];
+                currentPage = 1;
+                renderBookings(currentPage);
+                renderPatients();
+                updateStats(bookings);
+
+                renderLeads(leads);   // 🔥 NEW
+                updateLeadStats(leads); // 🔥 NEW
+
+            } catch (e) {
+                console.error("Sync Error:", e);
+            }
+        }
+
+        function renderLeads(data) {
+            const tbody = document.getElementById("leadsBody");
+            tbody.innerHTML = "";
+
+            data.forEach(l => {
+                let badgeClass = "badge-lead";
+                if (l.status === "DROPPED") badgeClass = "badge-dropped";
+                if (l.status === "CONVERTED") badgeClass = "badge-converted";
+
+                const row = `
+        <tr>
+            <td><b>${l.name}</b></td>
+            <td>${l.phone}</td>
+            <td><span class="badge ${badgeClass}">${l.status}</span></td>
+            <td>${l.stepDropped ? "Step " + l.stepDropped : "-"}</td>
+            <td style="text-align:right">
+                <a href="tel:${l.phone}" class="btn-google">Call</a>
+            </td>
+        </tr>
+        `;
+
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        function updateLeadStats(data) {
+            document.getElementById('leadTotal').innerText = data.length;
+
+            document.getElementById('leadHot').innerText =
+                data.filter(l => l.status === "INTERESTED" || l.status === "DROPPED").length;
+
+            document.getElementById('leadConverted').innerText =
+                data.filter(l => l.status === "CONVERTED").length;
+        }
+        function updateStats(data) {
+            document.getElementById('statTotal').innerText = data.length;
+            document.getElementById('statPending').innerText = data.filter(b => b.status !== 'Confirmed' && b.status !== 1).length;
+            document.getElementById('statConfirmed').innerText = data.filter(b => b.status === 'Confirmed' || b.status === 1).length;
+        }
+
+
+
+        window.onload = syncData;
+    </script>
+</body>
+
+</html>

@@ -1,4 +1,5 @@
 ﻿using Domain;
+using Domain.DTOS;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -109,5 +110,48 @@ namespace api.Controllers
 
             return Ok(lead);
         }
+
+        // GET availability
+        [HttpGet("availability/{clinicId}")]
+        public async Task<IActionResult> GetAvailability(Guid clinicId)
+        {
+            var availability = await _context.Availability
+                .Where(x => x.ClinicId == clinicId)
+                .OrderBy(x => x.DayOfWeek)
+                .ToListAsync();
+
+            return Ok(availability);
+        }
+
+        // POST/UPDATE availability
+        [HttpPost("availability")]
+        public async Task<IActionResult> UpdateAvailability([FromBody] AvailabilityDto dto)
+        {
+            var existing = await _context.Availability
+                .FirstOrDefaultAsync(x => x.ClinicId == dto.ClinicId && x.DayOfWeek == dto.DayOfWeek);
+
+            if (existing != null)
+            {
+                existing.StartTime = TimeSpan.Parse(dto.StartTime);
+                existing.EndTime = TimeSpan.Parse(dto.EndTime);
+            }
+            else
+            {
+                _context.Availability.Add(new Availability
+                {
+                    Id = Guid.NewGuid(),
+                    ClinicId = dto.ClinicId,
+                    DayOfWeek = dto.DayOfWeek,
+                    StartTime = TimeSpan.Parse(dto.StartTime),
+                    EndTime = TimeSpan.Parse(dto.EndTime)
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+       
+      
     }
 }

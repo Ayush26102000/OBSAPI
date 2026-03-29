@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Clinic Pro | Universal Scheduler</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --google-blue: #1a73e8;
+            --google-green: #1e8e3e;
+            --surface: #ffffff;
+            --bg: #f8f9fa;
+            --text-dark: #202124;
+            --text-secondary: #5f6368;
+            --border: #dadce0;
+            --radius-xl: 28px;
+            --radius-lg: 16px;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Launcher Button */
+        .btn-launch {
+            background: var(--google-blue);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 100px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
+            font-size: 16px;
+        }
+
+        .btn-launch:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(26, 115, 232, 0.3);
+        }
+
+        /* Full-Screen Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(32, 33, 36, 0.5);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        /* The Modal - App Shell */
+        .modal {
+            background: var(--surface);
+            width: 500px;
+            max-width: 95%;
+            height: 780px;
+            border-radius: var(--radius-xl);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            animation: appEntry 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        @keyframes appEntry {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Progress Steps */
+        .stepper {
+            padding: 32px 32px 10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .step-dot {
+            height: 4px;
+            flex: 1;
+            background: #e8eaed;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .step-dot.active::after {
+            content: '';
+            display: block;
+            height: 100%;
+            width: 100%;
+            background: var(--google-blue);
+            animation: progressFill 0.4s ease;
+        }
+
+        @keyframes progressFill {
+            from {
+                width: 0;
+            }
+
+            to {
+                width: 100%;
+            }
+        }
+
+        /* Views */
+        .view-container {
+            flex: 1;
+            padding: 0 32px;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+
+        .view {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .view.active {
+            display: block;
+            animation: viewSlide 0.4s ease forwards;
+        }
+
+        @keyframes viewSlide {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 500;
+            margin: 0 0 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 15px;
+        }
+
+        /* Service Cards - Huge & Tappable */
+        .card-choice {
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-choice:hover {
+            border-color: var(--google-blue);
+            background: #f8faff;
+        }
+
+        .card-choice.selected {
+            border-color: var(--google-blue);
+            background: #f8faff;
+            box-shadow: inset 0 0 0 1px var(--google-blue);
+        }
+
+        /* Date Scroller - Custom Visuals */
+        .calendar-row {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 8px 2px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .date-tile {
+            min-width: 65px;
+            height: 95px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            flex-shrink: 0;
+        }
+
+        .date-tile.active {
+            background: var(--google-blue);
+            border-color: var(--google-blue);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .date-tile b {
+            font-size: 22px;
+        }
+
+        /* Time Grid */
+        .time-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .time-chip {
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .time-chip.active {
+            background: var(--google-blue);
+            color: white;
+            border-color: var(--google-blue);
+        }
+
+        /* Summary Bill Layout */
+        .summary-box {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #eee;
+        }
+
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+
+        .summary-line b {
+            color: var(--google-blue);
+        }
+
+        /* Input Controls */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-size: 16px;
+            font-family: inherit;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: var(--google-blue);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        /* Sticky Footer Navigation */
+        .modal-footer {
+            padding: 24px 32px;
+            background: white;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid #f1f3f4;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 18px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-next {
+            background: var(--google-blue);
+            color: white;
+        }
+
+        .btn-back {
+            background: #f1f3f4;
+            color: var(--text-dark);
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Success & Google Calendar */
+        .success-hero {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .g-cal-btn {
+            background: white;
+            border: 1px solid #dadce0;
+            color: #3c4043;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-top: 15px;
+            transition: 0.2s;
+        }
+
+        .g-cal-btn:hover {
+            background: #f8f9fa;
+            border-color: #d2d2d2;
+        }
+
+        /* 1. HERO LANDING & BUTTON */
+    .hero-container {
+        text-align: center;
+        max-width: 600px;
+        padding: 40px;
+    }
+
+    .btn-launch {
+        background: var(--google-blue);
+        color: white;
+        padding: 22px 48px;
+        border-radius: 100px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        font-size: 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4); }
+        70% { box-shadow: 0 0 0 20px rgba(26, 115, 232, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+    }
+
+    /* 2. CLOSE BUTTON */
+    .close-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background: #f1f3f4;
+        color: #5f6368;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        z-index: 10;
+        transition: 0.2s;
+    }
+    .close-btn:hover { background: #e8eaed; color: #202124; }
+
+    /* 3. REVIEWS SECTION */
+    .reviews-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        text-align: left;
+    }
+    .review-card {
+        background: #f8f9fa;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        font-size: 13px;
+    }
+    .stars { color: #fbbc04; margin-bottom: 4px; }
+    
+    /* Appointment Detail Card for Success Screen */
+    .confirm-card {
+        background: #e8f0fe;
+        border: 1px solid #c1d5fa;
+        padding: 20px;
+        border-radius: 16px;
+        text-align: left;
+        margin: 20px 0;
+    }
+    .confirm-card div { margin-bottom: 8px; font-size: 14px; }
+    </style>
+</head>
+
+<body>
+
+    <div class="hero-container">
+        <h1 style="font-size: 48px; margin-bottom: 16px;">Wellness Simplified.</h1>
+        <p style="font-size: 18px; margin-bottom: 32px;">Book your next professional session in less than 60 seconds with our instant scheduler.</p>
+        <button class="btn-launch" onclick="openApp()">
+            Book Now
+        </button>
+    </div>
+
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <div class="stepper">
+                <div class="step-dot active" id="dot1"></div>
+                <div class="step-dot" id="dot2"></div>
+                <div class="step-dot" id="dot3"></div>
+                <button class="close-btn" onclick="closeApp()">×</button>
+            </div>
+
+            <div class="view-container">
+                <div id="v1" class="view active">
+                    <h2>Select Service</h2>
+                    <p>What can we help you with today?</p>
+                    <div id="serviceList"></div>
+                </div>
+
+                <div id="v2" class="view">
+                    <h2>Pick a Time</h2>
+                    <div class="calendar-row" id="calRow"></div>
+                    <div class="time-grid" id="timeGrid">
+                        <p style="grid-column: span 2; text-align: center; color: #999;">Select a date to see available
+                            slots</p>
+                    </div>
+                </div>
+
+                <div id="v3" class="view">
+                    <h2>Almost Done</h2>
+                    <div class="summary-box">
+                        <div class="summary-line"><span>Service</span><b id="sumSrv">--</b></div>
+                        <div class="summary-line"><span>Schedule</span><b id="sumDateTime">--</b></div>
+                    </div>
+                    <div class="input-group"><input type="text" id="pName" placeholder="Your Full Name"
+                            class="input-field"></div>
+                    <div class="input-group"><input type="tel" id="pPhone" placeholder="Mobile Number"
+                            class="input-field"></div>
+                </div>
+
+                <div id="v4" class="view success-hero">
+                    <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
+                    <h2>You're All Set!</h2>
+                    <p>Your appointment is confirmed. We've notified the provider.</p>
+
+                    <a href="#" id="gCalLink" target="_blank" class="g-cal-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Google_Calendar_icon_%282020%29.svg"
+                            width="20" alt="GCal">
+                        Add to Google Calendar
+                    </a>
+
+                    <button class="btn btn-next" style="margin-top:30px; width:100%"
+                        onclick="downloadReceipt()">Download Receipt (PDF)</button>
+                    <button class="btn btn-back" style="margin-top:10px; width:100%" onclick="location.reload()">Return
+                        to Homepage</button>
+                </div>
+            </div>
+
+            <div class="modal-footer" id="footer">
+                <button class="btn btn-back" id="backBtn" style="visibility: hidden;"
+                    onclick="moveStep(-1)">Back</button>
+                <button class="btn btn-next" id="nextBtn" disabled onclick="moveStep(1)">Continue</button>
+            </div>
+        </div>
+    </div>
+    <div id="leadPopup" style="
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.5);
+z-index:2000;
+align-items:center;
+justify-content:center;
+">
+        <div style="
+    background:white;
+    padding:30px;
+    border-radius:20px;
+    width:90%;
+    max-width:350px;
+  ">
+            <h3>Continue Booking</h3>
+            <p style="color:#666;font-size:14px;">Enter details to save your slot</p>
+
+            <input id="leadName" placeholder="Your Name" class="input-field">
+            <input id="leadPhone" placeholder="Mobile Number" class="input-field" style="margin-top:10px;">
+
+            <button onclick="captureLead()" class="btn btn-next" style="margin-top:15px; width:100%">
+                Continue
+            </button>
+        </div>
+    </div>
+    <script>
+        const API = "http://localhost:5026/api";
+        const CLINIC_ID = "8DFE6DD1-D5C6-49E2-B931-A4F414C62809";
+
+        let step = 1;
+        let state = {
+            service: '',
+            sId: '',
+            date: '',
+            time: '',
+            rawSlot: '',
+            leadName: '',
+            leadPhone: '',
+            leadCaptured: false
+        };
+        function showLeadPopup() {
+            if (state.leadCaptured) return;
+            document.getElementById('leadPopup').style.display = 'flex';
+        }
+
+        async function captureLead() {
+            const name = document.getElementById('leadName').value.trim();
+            const phone = document.getElementById('leadPhone').value.trim();
+
+            if (name.length < 3) {
+                alert("Enter valid name");
+                return;
+            }
+
+            if (!/^[6-9]\d{9}$/.test(phone)) {
+                alert("Enter valid mobile number");
+                return;
+            }
+
+            state.leadName = name;
+            state.leadPhone = phone;
+            state.leadCaptured = true;
+
+            // SAVE TO BACKEND 🔥
+            try {
+                await fetch(`${API}/public/lead`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        clinicId: CLINIC_ID,
+                        name,
+                        phone,
+                        source: "scheduler",
+                        status: "INTERESTED"
+                    })
+                });
+            } catch (e) {
+                console.log("Lead save failed", e);
+            }
+
+            document.getElementById('leadPopup').style.display = 'none';
+        }
+        function openApp() {
+            document.getElementById('overlay').style.display = 'flex';
+            fetchServices();
+            buildCalendar();
+        }
+
+        async function fetchServices() {
+            const res = await fetch(`${API}/public/services/${CLINIC_ID}`);
+            const data = await res.json();
+            const list = document.getElementById('serviceList');
+            list.innerHTML = '';
+            data.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'card-choice';
+                div.innerHTML = `<div><b>${s.name}</b><br><small>Professional Session</small></div><span>›</span>`;
+                div.onclick = () => {
+                    state.service = s.name;
+                    state.sId = s.id;
+
+                    document.querySelectorAll('.card-choice').forEach(c => c.classList.remove('selected'));
+                    div.classList.add('selected');
+
+                    showLeadPopup(); // 🔥 CAPTURE EARLY
+
+                    document.getElementById('nextBtn').disabled = false;
+                };
+                list.appendChild(div);
+            });
+        }
+
+        function buildCalendar() {
+            const row = document.getElementById('calRow');
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let i = 0; i < 14; i++) {
+                const d = new Date(); d.setDate(d.getDate() + i);
+                const tile = document.createElement('div');
+                tile.className = 'date-tile';
+                tile.innerHTML = `<small>${days[d.getDay()]}</small><b>${d.getDate()}</b>`;
+                tile.onclick = () => {
+                    document.querySelectorAll('.date-tile').forEach(t => t.classList.remove('active'));
+                    tile.classList.add('active');
+                    state.date = d.toISOString().split('T')[0];
+                    fetchSlots(state.date);
+                };
+                row.appendChild(tile);
+            }
+        }
+
+        async function fetchSlots(date) {
+            const res = await fetch(`${API}/public/slots?clinicId=${CLINIC_ID}&date=${date}`);
+            const data = await res.json();
+            const grid = document.getElementById('timeGrid');
+            grid.innerHTML = '';
+            data.forEach(s => {
+                const tStr = new Date(s).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const chip = document.createElement('div');
+                chip.className = 'time-chip';
+                chip.innerText = tStr;
+                chip.onclick = () => {
+                    document.querySelectorAll('.time-chip').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+
+                    state.time = tStr;
+                    state.rawSlot = s;
+
+                    showLeadPopup(); // 🔥 ALSO HERE
+
+                    document.getElementById('nextBtn').disabled = false;
+                };
+                grid.appendChild(chip);
+            });
+        }
+function closeApp() {
+            document.getElementById('overlay').style.display = 'none';
+            // Optional: reset state here if you want a fresh start next time
+        }
+        function moveStep(dir) {
+            if (step === 3 && dir === 1) { submitBooking(); return; }
+            step += dir;
+            renderView();
+        }
+
+        function renderView() {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`v${step}`).classList.add('active');
+
+            // Update Dots
+            document.querySelectorAll('.step-dot').forEach((d, i) => d.classList.toggle('active', i < step));
+
+            document.getElementById('backBtn').style.visibility = step === 1 ? 'hidden' : 'visible';
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('nextBtn').innerText = step === 3 ? "Confirm Booking" : "Continue";
+
+            if (step === 3) {
+                document.getElementById('sumSrv').innerText = state.service;
+                document.getElementById('sumDateTime').innerText = `${state.date} @ ${state.time}`;
+
+                // 🔥 AUTO FILL
+                document.getElementById('pName').value = state.leadName || '';
+                document.getElementById('pPhone').value = state.leadPhone || '';
+
+                document.getElementById('nextBtn').disabled = false;
+            }
+        }
+
+        async function submitBooking() {
+            const btn = document.getElementById('nextBtn');
+            btn.innerText = "Syncing..."; btn.disabled = true;
+
+            const payload = {
+                clinicId: CLINIC_ID, serviceId: state.sId,
+                patientName: document.getElementById('pName').value,
+                phone: document.getElementById('pPhone').value,
+                appointmentDate: state.rawSlot
+            };
+
+            const res = await fetch(`${API}/booking`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                step = 4;
+                renderView();
+                document.getElementById('footer').style.display = 'none';
+                generateGCalLink();
+            }
+        }
+
+        function generateGCalLink() {
+            const start = state.rawSlot.replace(/[-:]/g, '').split('.')[0] + 'Z';
+            const end = new Date(new Date(state.rawSlot).getTime() + 30 * 60000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(state.service)}&dates=${start}/${end}&details=Appointment+at+Clinic&location=Clinic+Location`;
+            document.getElementById('gCalLink').href = url;
+        }
+
+        function downloadReceipt() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const primaryColor = [41, 128, 185]; // A professional blue
+            const secondaryColor = [44, 62, 80]; // Dark slate for text
+
+            // --- Header & Branding ---
+            doc.setFillColor(...primaryColor);
+            doc.rect(0, 0, 210, 40, 'F'); // Top banner background
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(24);
+            doc.text("HEALTHCARE PLUS", 20, 25); // Replace with your "Big Company" name
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Official Booking Confirmation", 20, 32);
+
+            // --- Receipt Details Box ---
+            doc.setTextColor(...secondaryColor);
+            doc.setFontSize(10);
+            doc.text(`Issued: ${new Date().toLocaleDateString()}`, 150, 50);
+            doc.text(`Receipt ID: #BK-${Math.floor(Math.random() * 100000)}`, 150, 55);
+
+            // --- Content Section ---
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, 65, 190, 65); // Horizontal divider
+
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("Patient Information", 20, 75);
+
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+
+            // Data Table Layout
+            const startY = 85;
+            const rowHeight = 10;
+
+            const data = [
+                ["Patient Name:", document.getElementById('pName').value],
+                ["Service Type:", state.service],
+                ["Appointment Time:", `${state.date} at ${state.time}`],
+                ["Clinic ID:", CLINIC_ID]
+            ];
+
+            data.forEach((row, index) => {
+                doc.setFont("helvetica", "bold");
+                doc.text(row[0], 20, startY + (index * rowHeight));
+                doc.setFont("helvetica", "normal");
+                doc.text(row[1], 70, startY + (index * rowHeight));
+            });
+
+            // --- Footer ---
+            doc.setDrawColor(...primaryColor);
+            doc.setLineWidth(1);
+            doc.line(20, 150, 190, 150);
+
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Thank you for choosing Healthcare Plus. Please arrive 15 minutes early.", 105, 160, null, null, "center");
+            doc.text("This is an electronically generated document. No signature required.", 105, 165, null, null, "center");
+
+            // Save PDF
+            doc.save(`Receipt_${document.getElementById('pName').value.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        window.addEventListener("beforeunload", function () {
+            if (state.leadPhone && !state.rawSlot) {
+                navigator.sendBeacon(`${API}/lead/abandon`, JSON.stringify({
+                    name: state.leadName,
+                    phone: state.leadPhone,
+                    step: step
+                }));
+            }
+        });
+    </script>
+</body>
+
+</html>
