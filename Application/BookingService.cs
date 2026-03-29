@@ -37,7 +37,14 @@ public class BookingService : IBooking
 
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync();
+        var lead = await _context.Leads
+    .FirstOrDefaultAsync(x => x.Phone == dto.Phone && x.ClinicId == dto.ClinicId);
 
+        if (lead != null)
+        {
+            lead.Status = "CONVERTED";
+            lead.UpdatedAt = DateTime.UtcNow;
+        }
         return booking.Id;
     }
 

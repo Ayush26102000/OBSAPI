@@ -13,4 +13,6 @@ public class AppDbContext : DbContext
     public DbSet<Availability> Availability { get; set; }
     public DbSet<BlockedSlot> BlockedSlots { get; set; }
 
+    public DbSet<Lead> Leads { get; set; }
+
 }

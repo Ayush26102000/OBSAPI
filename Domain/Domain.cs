@@ -44,3 +44,21 @@ public class BlockedSlot
     public TimeSpan StartTime { get; set; }
     public TimeSpan EndTime { get; set; }
 }
+
+public class Lead
+{
+    public Guid Id { get; set; }
+    public Guid ClinicId { get; set; }
+
+    public string Name { get; set; }
+    public string Phone { get; set; }
+
+    public string Status { get; set; } // INTERESTED / DROPPED / CONVERTED
+    public string Source { get; set; }
+
+    public int? StepDropped { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
+
