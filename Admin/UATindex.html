@@ -85,6 +85,98 @@
             font-weight: 700;
         }
 
+        .service-config-grid {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .service-panel {
+            flex: 1;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15);
+        }
+
+        .service-panel h3 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .search-input {
+            width: 100%;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .service-item {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: 0.15s ease-in-out;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .service-item:hover {
+            border-color: var(--google-blue);
+            box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .bucket-item {
+            background: #f8fbff;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bucket-item input {
+            border: 1px solid var(--border);
+            border-radius:8px;
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-radius: 999px;
+            font-size: 12px;
+            padding: 6px 12px;
+            margin-bottom: 10px;
+        }
+
+        .btn-google {
+            border-radius: 999px;
+            transition: transform 0.15s ease;
+        }
+
+        .btn-google:hover {
+            transform: translateY(-1px);
+        }
+
         /* Main Content */
         .main-panel {
             flex: 1;
@@ -311,6 +403,9 @@
         <div class="nav-item" onclick="switchView('view-availability', this)">
             <span style="font-size:18px">🕒</span> Availability
         </div>
+        <div class="nav-item" onclick="switchView('view-services', this)">
+            <span style="font-size:18px">🧰</span> Services
+        </div>
     </nav>
 
     <div class="main-panel">
@@ -396,7 +491,7 @@
                         onkeyup="searchPatients()">
                 </div>
             </div>
-            <div id="patientPagination"  style="display:flex; justify-content:center; margin:20px; gap:10px;"></div>
+            <div id="patientPagination" style="display:flex; justify-content:center; margin:20px; gap:10px;"></div>
             <div class="table-wrapper">
                 <table>
                     <thead>
@@ -466,12 +561,36 @@
                 </table>
             </div>
         </div>
+        <div id="view-services" class="view">
+            <h1>Service Management</h1>
+
+            <div class="service-config-grid">
+
+                <!-- LEFT: All Services -->
+                <div class="service-panel">
+                    <h3>All Services</h3>
+                    <input id="serviceSearch" class="search-input" type="search" placeholder="Search by service name..." oninput="filterServiceList()" />
+                    <div id="servicesList"></div>
+                    <button class="btn-google" style="width:100%; margin-top:8px;" onclick="addServiceField()">+ Add Service</button>
+                </div>
+
+                <!-- RIGHT: Bucket -->
+                <div class="service-panel">
+                    <h3>Active Services (Bucket)</h3>
+                    <p class="chip">Tip: edit in place, remove when done</p>
+                    <div id="bucketList" style="min-height:220px;"></div>
+                    <button class="btn-google" style="width:100%; margin-top:14px;" onclick="saveServices()">Save Changes</button>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <script>
         const API = "http://localhost:5026/api";
         const CLINIC_ID = "8DFE6DD1-D5C6-49E2-B931-A4F414C62809";
-
+        let servicesData = [];
+        let bucketServices = [];
         let bookingsData = [];
 
         let currentPage = 1;
@@ -488,8 +607,116 @@
             el.classList.add('active');
             syncData();
             if (viewId === 'view-availability') fetchAvailability();
+            if (viewId === 'view-services') loadServices();
         }
 
+        async function loadServices() {
+            const res = await fetch(`${API}/admin/block/services/${CLINIC_ID}`);
+            if (!res.ok) {
+                console.error('Failed to load services', res.status, await res.text());
+                return;
+            }
+            servicesData = await res.json();
+            bucketServices = [...servicesData]; // default all active
+            renderServices();
+        }
+
+
+        let serviceFilter = "";
+
+        function filterServiceList() {
+            serviceFilter = document.getElementById("serviceSearch").value.toLowerCase();
+            renderServices();
+        }
+
+        function renderServices() {
+            const list = document.getElementById("servicesList");
+            const bucket = document.getElementById("bucketList");
+
+            list.innerHTML = "";
+            bucket.innerHTML = "";
+
+            const visibleServices = servicesData
+                .filter(s => !serviceFilter || s.name.toLowerCase().includes(serviceFilter));
+
+            if (!visibleServices.length) {
+                list.innerHTML = `<p style="color:var(--text-secondary);">No matching services found.</p>`;
+            }
+
+            visibleServices.forEach(s => {
+                list.innerHTML += `
+        <div class="service-item" onclick="addToBucket('${s.id}')"
+            style="padding:12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer;">
+            <b>${s.name}</b> - ${s.durationMinutes} mins
+        </div>
+        `;
+            });
+
+            bucketServices.forEach(s => {
+                bucket.innerHTML += `
+        <div class="bucket-item">
+            <div style="flex:1; display:flex; gap:8px; align-items:center;">
+                <input class="input-google" value="${s.name}" 
+                    onchange="updateService('${s.id}', this.value, ${s.durationMinutes})"/>
+                <input type="number" class="input-google" style="width:80px;"
+                    value="${s.durationMinutes}" 
+                    onchange="updateService('${s.id}', '${s.name}', this.value)"/>
+            </div>
+            <button style="border:none; background:transparent; color:#d93025; font-size:16px;" onclick="removeFromBucket('${s.id}')">✕</button>
+        </div>
+        `;
+            });
+        }
+
+        function addToBucket(id) {
+            const service = servicesData.find(s => s.id === id);
+
+            if (!bucketServices.find(s => s.id === id)) {
+                bucketServices.push(service);
+                renderServices();
+            }
+        }
+
+        function removeFromBucket(id) {
+            bucketServices = bucketServices.filter(s => s.id !== id);
+            renderServices();
+        }
+        function updateService(id, name, duration) {
+            const service = bucketServices.find(s => s.id === id);
+            if (service) {
+                service.name = name;
+                service.durationMinutes = parseInt(duration);
+            }
+        }
+
+        function addServiceField() {
+            const newService = {
+                id: null,
+                name: "New Service",
+                durationMinutes: 15
+            };
+
+            bucketServices.push(newService);
+            renderServices();
+        }
+
+        async function saveServices() {
+            const res = await fetch(`${API}/admin/block/services/manage/${CLINIC_ID}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(bucketServices)
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                showToast(`Error saving services: ${res.status}`);
+                console.error('saveServices failed', res.status, text);
+                return;
+            }
+
+            showToast("Services updated!");
+            await loadServices();
+        }
         function renderBookings(page = 1) {
             const tbody = document.getElementById("bookingsBody");
             tbody.innerHTML = "";
@@ -784,7 +1011,10 @@
 
 
 
-        window.onload = syncData;
+        window.onload = async () => {
+            await syncData();
+            await loadServices();
+        };
     </script>
 </body>
 

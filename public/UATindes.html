@@ -232,9 +232,9 @@
         /* Time Grid */
         .time-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
-            margin: 12px;
+            margin: 12px 0;
         }
 
         .time-chip {
@@ -520,6 +520,7 @@
                     </div>
 
                     <div id="timeContainer">
+                        <p style="margin-bottom: 16px; color: var(--text-secondary);">Available times for <b id="selectedDate">--</b></p>
                         <div class="time-section-label">☀️ MORNING</div>
                         <div class="time-grid" id="gridMorning"></div>
                         <div class="time-section-label">🌤️ AFTERNOON</div>
@@ -693,6 +694,7 @@ justify-content:center;
                     document.querySelectorAll('.date-tile').forEach(t => t.classList.remove('active'));
                     tile.classList.add('active');
                     state.date = d.toISOString().split('T')[0];
+                    document.getElementById('selectedDate').innerText = d.toLocaleDateString();
                     fetchSlots(state.date);
                 };
                 row.appendChild(tile);
@@ -709,10 +711,21 @@ justify-content:center;
             };
             Object.values(grids).forEach(g => g.innerHTML = '');
 
+            if (!data.length) {
+                const noSlot = document.createElement('div');
+                noSlot.className = 'no-slots';
+                noSlot.innerText = 'No slots available for this date';
+                grids.morning.appendChild(noSlot);
+                return;
+            }
+
+            // Sort slots by time
+            data.sort((a, b) => new Date(a) - new Date(b));
+
             data.forEach(s => {
                 const dateObj = new Date(s);
                 const hour = dateObj.getHours();
-                const tStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const tStr = dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
                 const chip = document.createElement('div');
                 chip.className = 'time-chip';
@@ -731,7 +744,9 @@ justify-content:center;
 
             // if segment has no slots, show message
             Object.entries(grids).forEach(([k, g]) => {
-                if (!g.children.length) {
+                if (!g.children.length || g.children[0].className === 'no-slots') {
+                    // already handled
+                } else if (!Array.from(g.children).some(c => c.className === 'time-chip')) {
                     const noSlot = document.createElement('div');
                     noSlot.className = 'no-slots';
                     noSlot.innerText = 'No slots available';
